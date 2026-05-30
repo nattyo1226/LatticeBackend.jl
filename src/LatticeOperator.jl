@@ -4,5 +4,5 @@ using LatticeModel
 
 include("matrix/Matrix.jl")
 using .Matrix
-export build_local_matrix, build_onsite_matrix, build_pair_matrix, build_hamiltonian_matrix
+export build_local_matrix, build_term_matrix, build_hamiltonian_matrix
 end

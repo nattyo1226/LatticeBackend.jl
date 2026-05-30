@@ -47,3 +47,9 @@ function build_zero_matrix(::Type{T}, num_sites::Int) where T<:Number
     dim = 2 ^ num_sites
     return spzeros(T, (dim, dim))
 end
+
+function build_zero_matrix(::Type{T}, lattice::Lattice) where T<:Number
+    num_sites = Int(nsites(lattice))
+    dim = 2 ^ num_sites
+    return spzeros(T, (dim, dim))
+end
