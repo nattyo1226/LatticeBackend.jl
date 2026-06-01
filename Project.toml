@@ -6,9 +6,11 @@ version = "1.0.0-DEV"
 [deps]
 LatticeGeometry = "a9deb695-1ab1-4287-81b1-7b7be27b3be4"
 LatticeOperator = "9961e162-348d-4209-8792-c1db31be3e1e"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
+LinearAlgebra = "1.11.0"
 SparseArrays = "1.11.0"
 julia = "1.11"
 

@@ -7,17 +7,17 @@ function build_matrix(pr::AbstractOperatorPrimitive)
 end
 
 function build_matrix(::Type{T}, ::Identity) where T<:Number
-    return T[1 0; 0 1]
+    return reshape(T[1, 0, 0, 1], (2, 2))
 end
 
 function build_matrix(::Type{T}, ::PauliX) where T<:Number
-    return T[0 1; 1 0]
+    return reshape(T[0, 1, 1, 0], (2, 2))
 end
 
 function build_matrix(::Type{T}, ::PauliY) where T<:Number
-    return T[0 -1im; 1im 0]
+    return reshape(T[0, -im, im, 0], (2, 2))
 end
 
 function build_matrix(::Type{T}, ::PauliZ) where T<:Number
-    return T[1 0; 0 -1]
+    return reshape(T[1, 0, 0, -1], (2, 2))
 end
