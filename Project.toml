@@ -1,11 +1,11 @@
-name = "LatticeOperator"
+name = "LatticeBackend"
 uuid = "9f0a755b-b2d8-4e02-9d89-924ac9769af1"
 authors = ["nattyo1226 <132973057+nattyo1226@users.noreply.github.com> and contributors"]
 version = "1.0.0-DEV"
 
 [deps]
 LatticeGeometry = "a9deb695-1ab1-4287-81b1-7b7be27b3be4"
-LatticeModel = "9961e162-348d-4209-8792-c1db31be3e1e"
+LatticeOperator = "9961e162-348d-4209-8792-c1db31be3e1e"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]

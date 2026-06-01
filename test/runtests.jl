@@ -1,10 +1,10 @@
-using LatticeOperator
+using LatticeBackend
 using Test
 
 using LatticeGeometry
-using LatticeModel
+using LatticeOperator
 using SparseArrays
 
-@testset "LatticeOperator.jl" begin
+@testset "LatticeBackend.jl" begin
     include("matrix.jl")
 end

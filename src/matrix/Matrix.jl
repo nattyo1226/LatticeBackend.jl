@@ -1,15 +1,13 @@
 module Matrix
 
 using LatticeGeometry
-using LatticeModel
+using LatticeOperator
 using SparseArrays
 
-include("../utils.jl")
-
 include("common.jl")
-export build_local_matrix
-
+include("primitive.jl")
 include("operator.jl")
-export build_term_matrix, build_hamiltonian_matrix
+
+export build_matrix
 
 end
