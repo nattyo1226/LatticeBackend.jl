@@ -1,3 +1,14 @@
+function build_zero_matrix(::Type{T}, num_sites::Int) where T<:Number
+    dim = 2 ^ num_sites
+    return spzeros(T, (dim, dim))
+end
+
+function build_zero_matrix(::Type{T}, lattice::Lattice) where T<:Number
+    num_sites = Int(nsites(lattice))
+    dim = 2 ^ num_sites
+    return spzeros(T, (dim, dim))
+end
+
 function build_local_matrix(::Type{T}, num_sites::Int, ids_site::NTuple{K,Int}, matrices::NTuple{K,<:AbstractMatrix}) where {T<:Number,K}
     dim = 2 ^ num_sites
     dim_matrix = 2 ^ K
@@ -41,15 +52,4 @@ end
 
 function build_local_matrix(::Type{T}, num_sites::Int, id_site::Int, matrix::AbstractMatrix) where T<:Number
     return build_local_matrix(T, num_sites, (id_site,), (matrix,))
-end
-
-function build_zero_matrix(::Type{T}, num_sites::Int) where T<:Number
-    dim = 2 ^ num_sites
-    return spzeros(T, (dim, dim))
-end
-
-function build_zero_matrix(::Type{T}, lattice::Lattice) where T<:Number
-    num_sites = Int(nsites(lattice))
-    dim = 2 ^ num_sites
-    return spzeros(T, (dim, dim))
 end

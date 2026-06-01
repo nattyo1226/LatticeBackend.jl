@@ -9,7 +9,7 @@ include("../utils.jl")
 include("common.jl")
 export build_local_matrix
 
-include("hamilaonian.jl")
+include("operator.jl")
 export build_term_matrix, build_hamiltonian_matrix
 
 end
