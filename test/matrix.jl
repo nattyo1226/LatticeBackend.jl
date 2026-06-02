@@ -24,7 +24,7 @@ function test_matrix()
         0 0 0 0 0 0 0 -2 0 0 0 -2 0 -2 -2 -4
     ]
     @test size(hamiltonian_matrix) == (16, 16)
-    @test Matrix(hamiltonian_matrix) == hamiltonian_matrix_true
+    @test hamiltonian_matrix == hamiltonian_matrix_true
 end
 
 @testset "Matrix builder functions" begin
