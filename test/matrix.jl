@@ -2,7 +2,7 @@ function test_matrix()
     geometry = Hypercubic(2, 2)
     boundary = OpenBoundary()
     lattice = Lattice(geometry, boundary)
-    model = TFIHamiltonian(j=-1.0, h=-2.0)
+    model = TFIHamiltonian(-1.0, -2.0)
 
     hamiltonian_matrix = build_matrix(lattice, model)
     hamiltonian_matrix_true = Float64[

@@ -6,7 +6,7 @@ function build_matrix(lattice::Lattice, op::AbstractOperator)
     return build_matrix(ComplexF64, lattice, op)
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::OnsiteOperator) where T<:Number
+function build_matrix(::Type{T}, lattice::Lattice, op::OnsiteOperator{P}) where {T<:Number, P<:AbstractOperatorPrimitive}
     num_sites = Int(nsites(lattice))
 
     if iszero(op.coeff)
@@ -15,11 +15,11 @@ function build_matrix(::Type{T}, lattice::Lattice, op::OnsiteOperator) where T<:
     end
 
     id = op.id
-    matrix = build_matrix(T, op.pr)
+    matrix = build_matrix(T, P)
     return T(op.coeff) * build_matrix(T, num_sites, id, matrix)
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::UniformOnsiteOperator) where T<:Number
+function build_matrix(::Type{T}, lattice::Lattice, op::UniformOnsiteOperator{P}) where {T<:Number, P<:AbstractOperatorPrimitive}
     num_sites = Int(nsites(lattice))
     if iszero(op.coeff)
         dim_system = 2 ^ num_sites
@@ -27,7 +27,7 @@ function build_matrix(::Type{T}, lattice::Lattice, op::UniformOnsiteOperator) wh
     end
 
     dim_system = 2 ^ num_sites
-    matrix = build_matrix(T, op.pr)
+    matrix = build_matrix(T, P)
     matrix_result = zeros(T, dim_system, dim_system)
 
     for id in 1:num_sites
@@ -37,7 +37,7 @@ function build_matrix(::Type{T}, lattice::Lattice, op::UniformOnsiteOperator) wh
     return T(op.coeff) * matrix_result
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::PairOperator) where T<:Number
+function build_matrix(::Type{T}, lattice::Lattice, op::PairOperator{P1, P2}) where {T<:Number, P1<:AbstractOperatorPrimitive, P2<:AbstractOperatorPrimitive}
     num_sites = Int(nsites(lattice))
 
     if iszero(op.coeff)
@@ -47,12 +47,12 @@ function build_matrix(::Type{T}, lattice::Lattice, op::PairOperator) where T<:Nu
 
     id1 = op.id1
     id2 = op.id2
-    matrix1 = build_matrix(T, op.pr1)
-    matrix2 = build_matrix(T, op.pr2)
+    matrix1 = build_matrix(T, P1)
+    matrix2 = build_matrix(T, P2)
     return T(op.coeff) * build_matrix(T, num_sites, (id1, id2), (matrix1, matrix2))
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::UniformPairOperator) where T<:Number
+function build_matrix(::Type{T}, lattice::Lattice, op::UniformPairOperator{P1, P2}) where {T<:Number, P1<:AbstractOperatorPrimitive, P2<:AbstractOperatorPrimitive}
     num_sites = Int(nsites(lattice))
 
     if iszero(op.coeff)
@@ -61,8 +61,8 @@ function build_matrix(::Type{T}, lattice::Lattice, op::UniformPairOperator) wher
     end
 
     dim_system = 2 ^ num_sites
-    matrix1 = build_matrix(T, op.pr1)
-    matrix2 = build_matrix(T, op.pr2)
+    matrix1 = build_matrix(T, P1)
+    matrix2 = build_matrix(T, P2)
     matrix_result = zeros(T, dim_system, dim_system)
 
     for (id1, id2) in neighbor_pairs(lattice)

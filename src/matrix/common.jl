@@ -49,7 +49,7 @@ function build_matrix(::Type{T}, num_sites::Int, ids_site::NTuple{K,Int}, matric
     # return sparse(rows, cols, vals)
 
     matrix_result = one(T)
-    identity_matrix = build_matrix(T, Identity())
+    identity_matrix = build_matrix(T, Identity)
 
     for id in 1:num_sites
         if id in ids_site
