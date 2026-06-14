@@ -1,14 +1,21 @@
-function build_matrix(::Type, ::Lattice, op::AbstractOperator)
+function build_matrix(::Type, ::Int, op::AbstractOperator)
     throw(ArgumentError("Unsupported operator type: $(typeof(op))"))
+end
+
+function build_matrix(num_sites::Int, op::AbstractOperator)
+    return build_matrix(ComplexF64, num_sites, op)
+end
+
+function build_matrix(::Type{T}, lattice::Lattice, op::AbstractOperator) where T<:Number
+    num_sites = Int(nsites(lattice))
+    return build_matrix(T, num_sites, op)
 end
 
 function build_matrix(lattice::Lattice, op::AbstractOperator)
     return build_matrix(ComplexF64, lattice, op)
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::TensoredOperator) where T<:Number
-    num_sites = Int(nsites(lattice))
-
+function build_matrix(::Type{T}, num_sites::Int, op::TensoredOperator) where T<:Number
     if iszero(op.coeff)
         dim_system = 2 ^ num_sites
         return zeros(T, dim_system, dim_system)
@@ -27,9 +34,7 @@ function build_matrix(::Type{T}, lattice::Lattice, op::TensoredOperator) where T
     return T(op.coeff) * reduce(kron, mats)
 end
 
-function build_matrix(::Type{T}, lattice::Lattice, op::SummedOperator) where T<:Number
-    num_sites = Int(nsites(lattice))
-
+function build_matrix(::Type{T}, num_sites::Int, op::SummedOperator) where T<:Number
     if iszero(op.coeff)
         dim_system = 2 ^ num_sites
         return zeros(T, dim_system, dim_system)
@@ -41,5 +46,5 @@ function build_matrix(::Type{T}, lattice::Lattice, op::SummedOperator) where T<:
         return zeros(T, dim_system, dim_system)
     end
 
-    return sum(build_matrix(T, lattice, op_sub) for op_sub in ops_filtered)
+    return sum(build_matrix(T, num_sites, op_sub) for op_sub in ops_filtered)
 end
