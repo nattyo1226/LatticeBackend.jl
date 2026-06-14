@@ -2,6 +2,7 @@ module Matrix
 
 using LatticeGeometry
 using LatticeOperator
+using LinearAlgebra
 
 include("common.jl")
 include("primitive.jl")
