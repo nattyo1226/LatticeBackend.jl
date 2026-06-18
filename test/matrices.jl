@@ -1,4 +1,7 @@
 function test_matrix_1()
+    j = -1.0
+    h = -2.0
+
     space = Space(
         SpinHalfSpace(),
         Hypercubic(
@@ -6,27 +9,25 @@ function test_matrix_1()
             OpenBoundary(2),
         ),
     )
-    model = TFIHamiltonian(space, -1.0, -2.0)
+    model = TFIHamiltonian(space, j, h)
 
     hamiltonian_matrix = build_matrix(space, model)
-    hamiltonian_matrix_true = Float64[
-        -4 -2 -2 0 -2 0 0 0 -2 0 0 0 0 0 0 0
-        -2 0 0 -2 0 -2 0 0 0 -2 0 0 0 0 0 0
-        -2 0 0 -2 0 0 -2 0 0 0 -2 0 0 0 0 0
-        0 -2 -2 0 0 0 0 -2 0 0 0 -2 0 0 0 0
-        -2 0 0 0 0 -2 -2 0 0 0 0 0 -2 0 0 0
-        0 -2 0 0 -2 0 0 -2 0 0 0 0 0 -2 0 0
-        0 0 -2 0 -2 0 4 -2 0 0 0 0 0 0 -2 0
-        0 0 0 -2 0 -2 -2 0 0 0 0 0 0 0 0 -2
-        -2 0 0 0 0 0 0 0 0 -2 -2 0 -2 0 0 0
-        0 -2 0 0 0 0 0 0 -2 4 0 -2 0 -2 0 0
-        0 0 -2 0 0 0 0 0 -2 0 0 -2 0 0 -2 0
-        0 0 0 -2 0 0 0 0 0 -2 -2 0 0 0 0 -2
-        0 0 0 0 -2 0 0 0 -2 0 0 0 0 -2 -2 0
-        0 0 0 0 0 -2 0 0 0 -2 0 0 -2 0 0 -2
-        0 0 0 0 0 0 -2 0 0 0 -2 0 -2 0 0 -2
-        0 0 0 0 0 0 0 -2 0 0 0 -2 0 -2 -2 -4
-    ]
+
+    hamiltonian_matrix_true = zeros(Float64, 16, 16)
+
+    for i in 1:16
+        ps = [(i - 1) >> r & 1 for r in 0:3]
+        ps = 2 .* ps .- 1
+        hamiltonian_matrix_true[i, i] += j * (ps[1] * ps[2] + ps[1] * ps[3] + ps[2] * ps[4] + ps[3] * ps[4])
+    end
+
+    for i in 1:16
+        for r in 0:3
+            j = ((i - 1) ⊻ (1 << r)) + 1
+            hamiltonian_matrix_true[i, j] += h
+        end
+    end
+
     @test size(hamiltonian_matrix) == (16, 16)
     @test hamiltonian_matrix == hamiltonian_matrix_true
 end
@@ -47,14 +48,16 @@ function test_matrix_2()
     hamiltonian_matrix = build_matrix(space, model)
 
 
-    hamiltonian_matrix_true = zeros(ComplexF64, 16, 16)
-    hamiltonian_matrix_true[4, 4] += u
-    hamiltonian_matrix_true[8, 8] += u
-    hamiltonian_matrix_true[12, 12] += u
-    hamiltonian_matrix_true[13, 13] += u
-    hamiltonian_matrix_true[14, 14] += u
-    hamiltonian_matrix_true[15, 15] += u
-    hamiltonian_matrix_true[16, 16] += 2u
+    hamiltonian_matrix_true = zeros(Float64, 16, 16)
+
+    for i in 1:16
+        if (((i - 1) >> 0) & 1 == 1) && (((i - 1) >> 1) & 1 == 1)
+            hamiltonian_matrix_true[i, i] += u
+        end
+        if (((i - 1) >> 2) & 1 == 1) && (((i - 1) >> 3) & 1 == 1)
+            hamiltonian_matrix_true[i, i] += u
+        end
+    end
 
     hamiltonian_matrix_true[2, 5] += -t
     hamiltonian_matrix_true[5, 2] += -t
