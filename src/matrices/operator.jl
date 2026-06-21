@@ -43,18 +43,18 @@ end
 
 function build_matrix(
     ::Type{N},
-    space::Space{T},
+    ids_all::AbstractVector{<:AbstractIndex{T}},
     op::TensoredOperator{T},
 ) where {N<:Number,T<:AbstractSystemTag}
     if iszero(op.coeff)
-        dim_system = dim(space)
+        dim_system = 2 ^ length(ids_all)
         return zeros(N, dim_system, dim_system)
     end
 
     identity_matrix = build_matrix(N, Identity{T}())
     z_matrix = build_matrix(N, PauliZ{T}())
 
-    mats = map(indices(space)) do id
+    mats = map(ids_all) do id
         mats_tmp = map(op.prs) do pr
             grade = majorana_grade(pr.pr)
 
@@ -76,14 +76,30 @@ end
 function build_matrix(
     ::Type{N},
     space::Space{T},
+    op::TensoredOperator{T},
+) where {N<:Number,T<:AbstractSystemTag}
+    return build_matrix(N, indices(space), op)
+end
+
+function build_matrix(
+    ::Type{N},
+    ids_all::AbstractVector{<:AbstractIndex{T}},
     op::SummedOperator{T},
 ) where {N<:Number,T<:AbstractSystemTag}
     ops_filtered = filter(op_sub -> !iszero(op_sub.coeff), op.ops)
 
     if isempty(ops_filtered)
-        dim_system = dim(space)
+        dim_system = 2 ^ length(ids_all)
         return zeros(N, dim_system, dim_system)
     end
 
-    return sum(build_matrix(N, space, op_sub) for op_sub in ops_filtered)
+    return sum(build_matrix(N, ids_all, op_sub) for op_sub in ops_filtered)
+end
+
+function build_matrix(
+    ::Type{N},
+    space::Space{T},
+    op::SummedOperator{T},
+) where {N<:Number,T<:AbstractSystemTag}
+    return build_matrix(N, indices(space), op)
 end
