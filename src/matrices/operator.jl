@@ -40,6 +40,10 @@ function reverse_bits(state::Int, num_bits::Int)
     return state_new
 end
 
+function reverse_bits(::Nothing, ::Int)
+    return nothing
+end
+
 function build_matrix(::Type{N}, ::Space{T}, op::AbstractOperator{T}) where {N<:Number,T<:AbstractSystemTag}
     throw(ArgumentError("Unsupported operator type: $(typeof(op))"))
 end
