@@ -1,4 +1,4 @@
-function apply(::IndexedOperatorPrimitive, state::Nothing)
+function apply(::IndexedOperatorPrimitive, ::Nothing)
     return nothing, 0.0
 end
 

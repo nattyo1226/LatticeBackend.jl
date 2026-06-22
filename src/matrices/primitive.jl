@@ -58,6 +58,7 @@ end
 
 function apply(::Occupation, state::Int, id::Int)
     occ_id = (state >> id) & 1
-    coeff_new = occ_id == 0 ? 0.0 : 1.0
-    return state, coeff_new
+    coeff_new = iszero(occ_id) ? 0.0 : 1.0
+    state_new = iszero(occ_id) ? nothing : state
+    return state_new, coeff_new
 end
