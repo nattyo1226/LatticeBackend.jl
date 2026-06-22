@@ -8,6 +8,10 @@ LatticeOperators = "9961e162-348d-4209-8792-c1db31be3e1e"
 LatticeSpaces = "a9deb695-1ab1-4287-81b1-7b7be27b3be4"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
+[sources]
+LatticeOperators = {url = "https://github.com/nattyo1226/LatticeOperators.jl", rev = "main"}
+LatticeSpaces = {url = "https://github.com/nattyo1226/LatticeSpaces.jl", rev = "main"}
+
 [compat]
 LatticeOperators = "1.0.0"
 LatticeSpaces = "1.0.0"
