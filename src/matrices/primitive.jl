@@ -1,31 +1,59 @@
-function build_matrix(::Type{N}, pr::AbstractOperatorPrimitive) where {N<:Number}
+function apply(pr::AbstractOperatorPrimitive, ::Int, ::Int)
     throw(ArgumentError("Unsupported operator type: $(typeof(pr))"))
 end
 
-function build_matrix(pr::AbstractOperatorPrimitive)
-    return build_matrix(ComplexF64, pr)
+function apply(::Identity, state::Int, ::Int)
+    return state, 1.0
 end
 
-function build_matrix(::Type{N}, ::Identity{T}) where {N<:Number,T<:AbstractSystemTag}
-    return reshape(N[1, 0, 0, 1], (2, 2))
+function apply(::PauliX, state::Int, id::Int)
+    state_new = state ⊻ (1 << id)
+    return state_new, 1.0
 end
 
-function build_matrix(::Type{N}, ::PauliX) where {N<:Number}
-    return reshape(N[0, 1, 1, 0], (2, 2))
+function apply(::PauliY, state::Int, id::Int)
+    state_new = state ⊻ (1 << id)
+    coeff_new = ((state >> id) & 1) == 0 ? 1.0 : -1.0
+    return state_new, coeff_new * im
 end
 
-function build_matrix(::Type{N}, ::PauliY) where {N<:Number}
-    return reshape(N[0, -im, im, 0], (2, 2))
+function apply(::PauliZ, state::Int, id::Int)
+    coeff_new = ((state >> id) & 1) == 0 ? 1.0 : -1.0
+    return state, coeff_new
 end
 
-function build_matrix(::Type{N}, ::PauliZ) where {N<:Number}
-    return reshape(N[1, 0, 0, -1], (2, 2))
+function apply(::Creation, state::Int, id::Int)
+    occ_id = (state >> id) & 1
+    if occ_id == 1
+        return nothing, 0.0
+    end
+
+    state_new = state | (1 << id)
+    coeff_new = begin
+        parity = count_ones(state & ((1 << id) - 1))
+        isodd(parity) ? -1.0 : 1.0
+    end
+
+    return state_new, coeff_new
 end
 
-function build_matrix(::Type{N}, pr::SummedOperatorPrimitive) where {N<:Number}
-    return sum(build_matrix(N, pr_sub) for pr_sub in pr.prs)
+function apply(::Annihilation, state::Int, id::Int)
+    occ_id = (state >> id) & 1
+    if occ_id == 0
+        return nothing, 0.0
+    end
+
+    state_new = state ⊻ (1 << id)
+    coeff_new = begin
+        parity = count_ones(state & ((1 << id) - 1))
+        isodd(parity) ? -1.0 : 1.0
+    end
+
+    return state_new, coeff_new
 end
 
-function build_matrix(::Type{N}, pr::ProductedOperatorPrimitive) where {N<:Number}
-    return foldl(*, [build_matrix(N, pr_sub) for pr_sub in pr.prs]; init=I)
+function apply(::Occupation, state::Int, id::Int)
+    occ_id = (state >> id) & 1
+    coeff_new = occ_id == 0 ? 0.0 : 1.0
+    return state, coeff_new
 end

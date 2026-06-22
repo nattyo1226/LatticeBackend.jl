@@ -6,5 +6,5 @@ using LatticeOperators
 using LinearAlgebra
 
 @testset "LatticeBackends.jl" begin
-    include("matrices.jl")
+    include("matrices/hamiltonian.jl")
 end

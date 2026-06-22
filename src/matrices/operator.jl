@@ -1,4 +1,35 @@
-function build_matrix(::Type, ::Space{T}, op::AbstractOperator{T}) where {T<:AbstractSystemTag}
+function apply(pr::IndexedOperatorPrimitive{T}, state::Int) where {T<:AbstractSystemTag}
+    id_bit = to_bit(pr.id)
+    return apply(pr.pr, state, id_bit)
+end
+
+function apply(
+    op::TensoredOperator,
+    state::Int,
+)
+    state_new = state
+    coeff_new = op.coeff
+
+    for pr in reverse(op.prs)
+        state_new, coeff_tmp = apply(pr, state_new)
+        if state_new === nothing
+            return nothing, 0.0
+        end
+        coeff_new *= coeff_tmp
+    end
+
+    return state_new, coeff_new
+end
+
+function reverse_bits(state::Int, num_bits::Int)
+    state_new = 0
+    for i in 0:(num_bits-1)
+        state_new |= ((state >> i) & 1) << (num_bits - 1 - i)
+    end
+    return state_new
+end
+
+function build_matrix(::Type{N}, ::Space{T}, op::AbstractOperator{T}) where {N<:Number,T<:AbstractSystemTag}
     throw(ArgumentError("Unsupported operator type: $(typeof(op))"))
 end
 
@@ -6,100 +37,33 @@ function build_matrix(space::Space{T}, op::AbstractOperator{T}) where {T<:Abstra
     return build_matrix(ComplexF64, space, op)
 end
 
-function build_matrix(
-    ::Type{N},
-    space::Space{T},
-    ids::AbstractVector{<:AbstractIndex{T}},
-    prs::AbstractVector{<:AbstractOperatorPrimitive{T}},
-) where {N<:Number,T<:AbstractSystemTag}
-    matrices = [build_matrix(N, pr) for pr in prs]
-    return build_matrix(N, space, ids, matrices)
-end
+function build_matrix(::Type{N}, space::Space{T}, op::TensoredOperator{T}) where {N<:Number,T<:AbstractSystemTag}
+    num_bits = nindices(space)
+    dim_system = dim(space)
+    mat = zeros(N, dim_system, dim_system)
 
-function build_matrix(
-    space::Space{T},
-    ids::AbstractVector{<:AbstractIndex{T}},
-    prs::AbstractVector{<:AbstractOperatorPrimitive{T}},
-) where {T<:AbstractSystemTag}
-    return build_matrix(ComplexF64, space, ids, prs)
-end
+    for ket in 0:(dim_system-1)
+        ket_reversed = reverse_bits(ket, num_bits)
+        bra_reversed, coeff = apply(op, ket_reversed)
 
-function build_matrix(
-    ::Type{N},
-    space::Space{T},
-    id::AbstractIndex{T},
-    pr::AbstractOperatorPrimitive{T},
-) where {N<:Number,T<:AbstractSystemTag}
-    return build_matrix(N, space, [id], [pr])
-end
-
-function build_matrix(
-    space::Space{T},
-    id::AbstractIndex{T},
-    pr::AbstractOperatorPrimitive{T},
-) where {T<:AbstractSystemTag}
-    return build_matrix(ComplexF64, space, [id], [pr])
-end
-
-function build_matrix(
-    ::Type{N},
-    ids_all::AbstractVector{<:AbstractIndex{T}},
-    op::TensoredOperator{T},
-) where {N<:Number,T<:AbstractSystemTag}
-    if iszero(op.coeff)
-        dim_system = 2 ^ length(ids_all)
-        return zeros(N, dim_system, dim_system)
-    end
-
-    identity_matrix = build_matrix(N, Identity{T}())
-    z_matrix = build_matrix(N, PauliZ{T}())
-
-    mats = map(ids_all) do id
-        mats_tmp = map(op.prs) do pr
-            grade = majorana_grade(pr.pr)
-
-            if id < pr.id
-                isodd(grade) ? z_matrix : identity_matrix
-            elseif id == pr.id
-                build_matrix(N, pr.pr)
-            else
-                identity_matrix
-            end
+        if bra_reversed === nothing
+            continue
         end
 
-        foldl(*, mats_tmp; init=identity_matrix)
+        bra = reverse_bits(bra_reversed, num_bits)
+        mat[bra+1, ket+1] += coeff
     end
 
-    return N(op.coeff) * reduce(kron, mats)
+    return mat
 end
 
-function build_matrix(
-    ::Type{N},
-    space::Space{T},
-    op::TensoredOperator{T},
-) where {N<:Number,T<:AbstractSystemTag}
-    return build_matrix(N, indices(space), op)
-end
+function build_matrix(::Type{N}, space::Space{T}, op::SummedOperator{T}) where {N<:Number,T<:AbstractSystemTag}
+    dim_system = dim(space)
+    mat = zeros(N, dim_system, dim_system)
 
-function build_matrix(
-    ::Type{N},
-    ids_all::AbstractVector{<:AbstractIndex{T}},
-    op::SummedOperator{T},
-) where {N<:Number,T<:AbstractSystemTag}
-    ops_filtered = filter(op_sub -> !iszero(op_sub.coeff), op.ops)
-
-    if isempty(ops_filtered)
-        dim_system = 2 ^ length(ids_all)
-        return zeros(N, dim_system, dim_system)
+    for op_i in op.ops
+        mat += build_matrix(N, space, op_i)
     end
 
-    return sum(build_matrix(N, ids_all, op_sub) for op_sub in ops_filtered)
-end
-
-function build_matrix(
-    ::Type{N},
-    space::Space{T},
-    op::SummedOperator{T},
-) where {N<:Number,T<:AbstractSystemTag}
-    return build_matrix(N, indices(space), op)
+    return mat
 end
