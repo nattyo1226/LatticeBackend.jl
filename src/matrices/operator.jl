@@ -1,3 +1,7 @@
+function apply(::IndexedOperatorPrimitive, state::Nothing)
+    return nothing, 0.0
+end
+
 function apply(pr::IndexedOperatorPrimitive{T}, state::Int) where {T<:AbstractSystemTag}
     id_bit = to_bit(pr.id)
     return apply(pr.pr, state, id_bit)
@@ -19,6 +23,13 @@ function apply(
     end
 
     return state_new, coeff_new
+end
+
+function apply(
+    ::TensoredOperator,
+    ::Nothing
+)
+    return nothing, 0.0
 end
 
 function reverse_bits(state::Int, num_bits::Int)

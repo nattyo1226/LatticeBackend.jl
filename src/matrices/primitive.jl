@@ -2,6 +2,10 @@ function apply(pr::AbstractOperatorPrimitive, ::Int, ::Int)
     throw(ArgumentError("Unsupported operator type: $(typeof(pr))"))
 end
 
+function apply(::AbstractOperatorPrimitive, ::Nothing, ::Int)
+    return nothing, 0.0
+end
+
 function apply(::Identity, state::Int, ::Int)
     return state, 1.0
 end
