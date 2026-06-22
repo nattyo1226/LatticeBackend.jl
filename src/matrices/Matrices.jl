@@ -6,6 +6,6 @@ using LatticeOperators
 include("primitive.jl")
 include("operator.jl")
 
-export apply, build_matrix
+export apply, reverse_bits, build_matrix
 
 end
