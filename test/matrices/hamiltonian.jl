@@ -87,20 +87,24 @@ function test_hubbard_2()
     space = Space(
         SpinfulFermionSpace(),
         Hypercubic(2, OpenBoundary),
-        ParticleNumberSector(2),
     )
-    model = HubbardHamiltonian(space, t, u)
+    model = SymmetricHubbardHamiltonian(space, t, u)
 
     hamiltonian_matrix = Float64.(build_matrix(ComplexF64, space, model))
 
     hamiltonian_matrix_true = zeros(Float64, 16, 16)
 
     for i in 1:16
-        if (((i - 1) >> 0) & 1 == 1) && (((i - 1) >> 1) & 1 == 1)
-            hamiltonian_matrix_true[i, i] += u
+        if ((i - 1) >> 0) & 1 == ((i - 1) >> 1) & 1
+            hamiltonian_matrix_true[i, i] += u / 4
+        else
+            hamiltonian_matrix_true[i, i] += -u / 4
         end
-        if (((i - 1) >> 2) & 1 == 1) && (((i - 1) >> 3) & 1 == 1)
-            hamiltonian_matrix_true[i, i] += u
+
+        if ((i - 1) >> 2) & 1 == ((i - 1) >> 3) & 1
+            hamiltonian_matrix_true[i, i] += u / 4
+        else
+            hamiltonian_matrix_true[i, i] += -u / 4
         end
     end
 
@@ -131,7 +135,7 @@ function test_hubbard_2()
     basis_sector = basis(space)
     hamiltonian_matrix_true = hamiltonian_matrix_true[basis_sector .+ 1, basis_sector .+ 1]
 
-    @test size(hamiltonian_matrix) == (6, 6)
+    @test size(hamiltonian_matrix) == (16, 16)
     @test hamiltonian_matrix == hamiltonian_matrix_true
 end
 

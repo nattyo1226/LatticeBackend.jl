@@ -1,64 +1,83 @@
-function apply(pr::AbstractOperatorPrimitive, ::Int, ::Int)
+function apply(pr::AbstractOperatorPrimitive, ::State, ::Int)
     throw(ArgumentError("Unsupported operator type: $(typeof(pr))"))
 end
 
-function apply(::AbstractOperatorPrimitive, ::Nothing, ::Int)
-    return nothing, 0.0
+function apply(pr::AbstractOperatorPrimitive, states::Vector{State}, id::Int)
+    return reduce(vcat, [apply(pr, state, id) for state in states]; init=Vector{State}())
 end
 
-function apply(::Identity, state::Int, ::Int)
-    return state, 1.0
+function apply(pr::AbstractOperatorPrimitive, bits::Int, id::Int)
+    return apply(pr, State(bits), id)
 end
 
-function apply(::PauliX, state::Int, id::Int)
-    state_new = state ⊻ (1 << id)
-    return state_new, 1.0
+function apply(::Identity, state::State, ::Int)
+    return [state]
 end
 
-function apply(::PauliY, state::Int, id::Int)
-    state_new = state ⊻ (1 << id)
-    coeff_new = ((state >> id) & 1) == 0 ? 1.0 : -1.0
-    return state_new, coeff_new * im
+function apply(::PauliX, state::State, id::Int)
+    bits_new = state.bits ⊻ (1 << id)
+    return [State(bits_new, state.coeff)]
 end
 
-function apply(::PauliZ, state::Int, id::Int)
-    coeff_new = ((state >> id) & 1) == 0 ? 1.0 : -1.0
-    return state, coeff_new
+function apply(::PauliY, state::State, id::Int)
+    bits_new = state.bits ⊻ (1 << id)
+    coeff_new = iszero((state.bits >> id) & 1) ? state.coeff * im : -state.coeff * im
+    return [State(bits_new, coeff_new)]
 end
 
-function apply(::Creation, state::Int, id::Int)
-    occ_id = (state >> id) & 1
-    if occ_id == 1
-        return nothing, 0.0
+function apply(::PauliZ, state::State, id::Int)
+    c = iszero((state.bits >> id) & 1) ? 1.0 : -1.0
+    return [c * state]
+end
+
+function apply(::Creation, state::State, id::Int)
+    occ_id = (state.bits >> id) & 1
+    if isone(occ_id)
+        return Vector{State}()
     end
 
-    state_new = state | (1 << id)
+    state_new = state.bits | (1 << id)
     coeff_new = begin
-        parity = count_ones(state & ((1 << id) - 1))
-        isodd(parity) ? -1.0 : 1.0
+        parity = count_ones(state.bits & ((1 << id) - 1))
+        isodd(parity) ? -state.coeff : state.coeff
     end
 
-    return state_new, coeff_new
+    return [State(state_new, coeff_new)]
 end
 
-function apply(::Annihilation, state::Int, id::Int)
-    occ_id = (state >> id) & 1
-    if occ_id == 0
-        return nothing, 0.0
+function apply(::Annihilation, state::State, id::Int)
+    occ_id = (state.bits >> id) & 1
+    if iszero(occ_id)
+        return Vector{State}()
     end
 
-    state_new = state ⊻ (1 << id)
+    state_new = state.bits ⊻ (1 << id)
     coeff_new = begin
-        parity = count_ones(state & ((1 << id) - 1))
-        isodd(parity) ? -1.0 : 1.0
+        parity = count_ones(state.bits & ((1 << id) - 1))
+        isodd(parity) ? -state.coeff : state.coeff
     end
 
-    return state_new, coeff_new
+    return [State(state_new, coeff_new)]
 end
 
-function apply(::Occupation, state::Int, id::Int)
-    occ_id = (state >> id) & 1
-    coeff_new = iszero(occ_id) ? 0.0 : 1.0
-    state_new = iszero(occ_id) ? nothing : state
-    return state_new, coeff_new
+function apply(::Occupation, state::State, id::Int)
+    occ_id = (state.bits >> id) & 1
+
+    if iszero(occ_id)
+        return Vector{State}()
+    else
+        return [state]
+    end
+end
+
+function apply(pr::SummedOperatorPrimitive, state::State, id::Int)
+    return reduce(vcat, [apply(pr, state, id) for pr in pr.prs]; init=Vector{State}())
+end
+
+function apply(pr::ProductedOperatorPrimitive, state::State, id::Int)
+    states = Vector{State}([pr.coeff * state])
+    for pr_tmp in reverse(pr.prs)
+        states = apply(pr_tmp, states, id)
+    end
+    return states
 end

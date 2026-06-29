@@ -3,6 +3,7 @@ module Matrices
 using LatticeSpaces
 using LatticeOperators
 
+include("type.jl")
 include("primitive.jl")
 include("operator.jl")
 

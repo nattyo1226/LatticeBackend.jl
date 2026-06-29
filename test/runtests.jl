@@ -5,6 +5,4 @@ using LatticeSpaces
 using LatticeOperators
 using LinearAlgebra
 
-@testset "LatticeBackends.jl" begin
-    include("matrices/hamiltonian.jl")
-end
+include("matrices/hamiltonian.jl")

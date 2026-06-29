@@ -1,47 +1,51 @@
-function apply(::IndexedOperatorPrimitive, ::Nothing)
-    return nothing, 0.0
-end
-
-function apply(pr::IndexedOperatorPrimitive{T}, state::Int) where {T<:AbstractSystemTag}
+function apply(pr::IndexedOperatorPrimitive{T}, state::State) where {T<:AbstractSystemTag}
     id_bit = to_bit(pr.id)
     return apply(pr.pr, state, id_bit)
 end
 
+function apply(pr::IndexedOperatorPrimitive{T}, states::Vector{State}) where {T<:AbstractSystemTag}
+    id_bit = to_bit(pr.id)
+    return apply(pr.pr, states, id_bit)
+end
+
+function apply(pr::IndexedOperatorPrimitive{T}, bits::Int) where {T<:AbstractSystemTag}
+    id_bit = to_bit(pr.id)
+    return apply(pr.pr, bits, id_bit)
+end
+
 function apply(
     op::TensoredOperator,
-    state::Int,
+    state::State,
 )
-    state_new = state
-    coeff_new = op.coeff
+    states = Vector{State}([op.coeff * state])
 
     for pr in reverse(op.prs)
-        state_new, coeff_tmp = apply(pr, state_new)
-        if state_new === nothing
-            return nothing, 0.0
-        end
-        coeff_new *= coeff_tmp
+        states = apply(pr, states)
     end
 
-    return state_new, coeff_new
+    return states
 end
 
 function apply(
-    ::TensoredOperator,
-    ::Nothing
+    op::TensoredOperator,
+    states::Vector{State},
 )
-    return nothing, 0.0
+    return reduce(vcat, [apply(op, state) for state in states])
 end
 
-function reverse_bits(state::Int, num_bits::Int)
-    state_new = 0
+function apply(
+    op::TensoredOperator,
+    bits::Int,
+)
+    return apply(op, State(bits))
+end
+
+function reverse_bits(bits::Int, num_bits::Int)
+    bits_new = 0
     for i in 0:(num_bits-1)
-        state_new |= ((state >> i) & 1) << (num_bits - 1 - i)
+        bits_new |= ((bits >> i) & 1) << (num_bits - 1 - i)
     end
-    return state_new
-end
-
-function reverse_bits(::Nothing, ::Int)
-    return nothing
+    return bits_new
 end
 
 function build_matrix(::Type{N}, ::Space{T}, op::AbstractOperator{T}) where {N<:Number,T<:AbstractSystemTag}
@@ -60,17 +64,16 @@ function build_matrix(::Type{N}, space::Space{T}, op::TensoredOperator{T}) where
 
     for ket in basis_sector
         ket_reversed = reverse_bits(ket, num_bits)
-        bra_reversed, coeff = apply(op, ket_reversed)
+        states = apply(op, ket_reversed)
 
-        if bra_reversed === nothing
-            continue
-        end
+        for state in states
+            bra = reverse_bits(state.bits, num_bits)
 
-        bra = reverse_bits(bra_reversed, num_bits)
-        if bra in basis_sector
-            bra_sector = searchsortedfirst(basis_sector, bra)
-            ket_sector = searchsortedfirst(basis_sector, ket)
-            mat[bra_sector, ket_sector] += coeff
+            if bra in basis_sector
+                bra_sector = searchsortedfirst(basis_sector, bra)
+                ket_sector = searchsortedfirst(basis_sector, ket)
+                mat[bra_sector, ket_sector] += state.coeff
+            end
         end
     end
 
