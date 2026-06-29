@@ -70,6 +70,18 @@ function apply(::Occupation, state::State, id::Int)
     end
 end
 
+function apply(::MajoranaX, state::State, id::Int)
+    return [apply(Creation(), state, id); apply(Annihilation(), state, id)]
+end
+
+function apply(::MajoranaY, state::State, id::Int)
+    return [im * apply(Creation(), state, id); (-im) * apply(Annihilation(), state, id)]
+end
+
+function apply(::MajoranaZ, state::State, id::Int)
+    return [state; (-2) * apply(Occupation(), state, id)]
+end
+
 function apply(pr::SummedOperatorPrimitive, state::State, id::Int)
     return reduce(vcat, [apply(pr, state, id) for pr in pr.prs]; init=Vector{State}())
 end
