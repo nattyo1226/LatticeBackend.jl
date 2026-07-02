@@ -1,92 +1,68 @@
-function apply(pr::IndexedOperatorPrimitive{T}, state::State) where {T<:AbstractSystemTag}
-    id_bit = to_bit(pr.id)
-    return apply(pr.pr, state, id_bit)
-end
-
-function apply(pr::IndexedOperatorPrimitive{T}, states::Vector{State}) where {T<:AbstractSystemTag}
-    id_bit = to_bit(pr.id)
-    return apply(pr.pr, states, id_bit)
-end
-
-function apply(pr::IndexedOperatorPrimitive{T}, bits::Int) where {T<:AbstractSystemTag}
-    id_bit = to_bit(pr.id)
-    return apply(pr.pr, bits, id_bit)
-end
-
-function apply(
-    op::TensoredOperator,
+function apply!(
+    out::Vector{State},
+    lo::LocalOperator,
     state::State,
 )
-    states = Vector{State}([op.coeff * state])
+    id = to_bit(lo.id)
+    return apply!(out, id, lo.pr, state)
+end
 
-    for pr in reverse(op.prs)
-        states = apply(pr, states)
+function apply!(
+    out::Vector{State},
+    po::ProductOperator,
+    state::State,
+)
+    states = Vector{State}([state])
+    buffer = Vector{State}()
+
+    for lo in Iterators.reverse(po.los)
+        empty!(buffer)
+        apply!(buffer, lo, states)
+
+        states, buffer = buffer, states
+        isempty(states) && break
     end
 
-    return states
-end
-
-function apply(
-    op::TensoredOperator,
-    states::Vector{State},
-)
-    return reduce(vcat, [apply(op, state) for state in states])
-end
-
-function apply(
-    op::TensoredOperator,
-    bits::Int,
-)
-    return apply(op, State(bits))
-end
-
-function reverse_bits(bits::Int, num_bits::Int)
-    bits_new = 0
-    for i in 0:(num_bits-1)
-        bits_new |= ((bits >> i) & 1) << (num_bits - 1 - i)
+    for s in states
+        push!(out, po.coeff * s)
     end
-    return bits_new
+
+    return out
 end
 
-function build_matrix(::Type{N}, ::Space{T}, op::AbstractOperator{T}) where {N<:Number,T<:AbstractSystemTag}
-    throw(ArgumentError("Unsupported operator type: $(typeof(op))"))
-end
+function combine_like_terms!(out::Vector{State}, states::Vector{State})
+    sort!(states, by=s -> s.bits)
 
-function build_matrix(space::Space{T}, op::AbstractOperator{T}) where {T<:AbstractSystemTag}
-    return build_matrix(ComplexF64, space, op)
-end
+    i = firstindex(states)
+    while i <= lastindex(states)
+        bits = states[i].bits
+        coeff = zero(ComplexF64)
 
-function build_matrix(::Type{N}, space::Space{T}, op::TensoredOperator{T}) where {N<:Number,T<:AbstractSystemTag}
-    num_bits = nindices(space)
-    dim_system = dim(space)
-    basis_sector = basis(space)
-    mat = zeros(N, dim_system, dim_system)
+        while i <= lastindex(states) && states[i].bits == bits
+            coeff += states[i].coeff
+            i += 1
+        end
 
-    for ket in basis_sector
-        ket_reversed = reverse_bits(ket, num_bits)
-        states = apply(op, ket_reversed)
-
-        for state in states
-            bra = reverse_bits(state.bits, num_bits)
-
-            if bra in basis_sector
-                bra_sector = searchsortedfirst(basis_sector, bra)
-                ket_sector = searchsortedfirst(basis_sector, ket)
-                mat[bra_sector, ket_sector] += state.coeff
-            end
+        if !iszero(coeff)
+            push!(out, State(bits, coeff))
         end
     end
 
-    return mat
+    return out
 end
 
-function build_matrix(::Type{N}, space::Space{T}, op::SummedOperator{T}) where {N<:Number,T<:AbstractSystemTag}
-    dim_system = dim(space)
-    mat = zeros(N, dim_system, dim_system)
+function apply!(
+    out::Vector{State},
+    so::SumOperator,
+    state::State,
+)
+    buffer = Vector{State}()
 
-    for op_i in op.ops
-        mat += build_matrix(N, space, op_i)
+    for po in so.pos
+        apply!(buffer, po, state)
     end
 
-    return mat
+    combine_like_terms!(out, buffer)
+
+    return out
 end

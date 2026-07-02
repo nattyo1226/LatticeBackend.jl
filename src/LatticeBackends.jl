@@ -2,6 +2,6 @@ module LatticeBackends
 
 include("matrices/Matrices.jl")
 using .Matrices
-export apply, reverse_bits, build_matrix
+export State, apply, apply!, dense_matrix, sparse_matrix
 
 end

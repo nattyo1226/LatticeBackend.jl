@@ -2,11 +2,13 @@ module Matrices
 
 using LatticeSpaces
 using LatticeOperators
+using SparseArrays
 
 include("type.jl")
-include("primitive.jl")
-include("operator.jl")
+export State, apply, apply!, dense_matrix, sparse_matrix
 
-export apply, reverse_bits, build_matrix
+include("primitive.jl")
+
+include("operator.jl")
 
 end
